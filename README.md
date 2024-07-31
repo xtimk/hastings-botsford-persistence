@@ -3,6 +3,9 @@ Python program to calculate Hastings Botsford Persistence from a generic NxN mat
 
 See: https://www.pnas.org/doi/10.1073/pnas.0506651103
 
+The formula implemented here is
+![hastings Botsford persistence](./images/HBformula.png)
+
 ## Requirements
 You'll need python 3 in order to run this project.
 
