@@ -3,6 +3,9 @@ Python program to calculate Hastings Botsford Persistence from a generic NxN mat
 
 See: https://www.pnas.org/doi/10.1073/pnas.0506651103
 
+## Requirements
+You'll need python 3 in order to run this project.
+
 ## Getting started
 Open a command prompt.
 Clone / Download this repository, and cd into it.
@@ -18,8 +21,6 @@ python -m venv env
 ```
 
 And activate it
-
-On windows
 ```bash
 .\env\Scripts\activate
 ```
