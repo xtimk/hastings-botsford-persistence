@@ -84,21 +84,28 @@ def gen_diseq_items_of_matrix(matrix):
     for perm in perms_to_consider:
         p = Permutation(perm)
         logger.debug(f"Considering permutation: {[el+1 for el in perm]}. Parity: {p.parity()}, Inversions: {p.inversions()}")
-        textOpString += f" + (({sgn_adapted(p)}) *"
+        textOpString += " + ("
+        textOpString += f"({sgn_adapted(p)}) *"
+        # generate numerator
         for k, l in zip(ks, perm):
             textOpString += f" {matrix[k][l]}"
+        # generate denominator
+        textOpString += "/"
+        for k in ks:
+            textOpString += f" {matrix[k][k]}"
+        
         textOpString += ")"
         logger.debug(textOpString)
     return textOpString
 
 def main():
-    initialMatrix = build_n_n_matrix(3)
+    initialMatrix = build_n_n_matrix(4)
     logger.info(f"Initial matrix\n{initialMatrix}")
-    logger.info("-------------")
     logger.info(f"Matrix shape: {initialMatrix.shape}")
     m = initialMatrix.shape[0]
     logger.info(f"Matrix size: {m}")
-    logger.info("-------------\n\n")
+    logger.info("-------------")
+    logger.info("-------------")
 
     textStr = ""
     for i in range(2,m+1):
@@ -107,7 +114,7 @@ def main():
             textStr += f"{gen_diseq_items_of_matrix(matrix)}"
             # logger.info(textStr)
     
-    logger.info(textStr)
+    logger.info(textStr[3:])
 
 if __name__ == "__main__":
     main()
