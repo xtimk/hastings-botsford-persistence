@@ -81,22 +81,34 @@ def gen_diseq_items_of_matrix(matrix):
         p = Permutation(x)
         logger.debug(f"{[el+1 for el in x]} - Parity: {p.parity()} | Inversions: {p.inversions()}")
     textOpString = ""
+    numOp = 0
     for perm in perms_to_consider:
         p = Permutation(perm)
         logger.debug(f"Considering permutation: {[el+1 for el in perm]}. Parity: {p.parity()}, Inversions: {p.inversions()}")
         textOpString += " + ("
         textOpString += f"({sgn_adapted(p)}) *"
+
+        sgn_op = sgn_adapted(p)
+
+        numerator_op = 1
         # generate numerator
         for k, l in zip(ks, perm):
             textOpString += f" {matrix[k][l]}"
+            numerator_op *= matrix[k][l]
         # generate denominator
         textOpString += "/"
+
+        denominator_op = 1
         for k in ks:
             textOpString += f" {matrix[k][k]}"
+            denominator_op *= matrix[k][k]
         
         textOpString += ")"
+
+        numOp += sgn_op * (numerator_op/denominator_op)
         logger.debug(textOpString)
-    return textOpString
+    logger.debug(f"NumOp: {numOp}")
+    return numOp, textOpString
 
 def main():
     initialMatrix = build_n_n_matrix(4)
@@ -108,13 +120,18 @@ def main():
     logger.info("-------------")
 
     textStr = ""
+    numRes = 0
     for i in range(2,m+1):
         matrices = getSquareSubmatrices(initialMatrix, i)
         for matrix in matrices:
-            textStr += f"{gen_diseq_items_of_matrix(matrix)}"
+            numOp, textOp = gen_diseq_items_of_matrix(matrix)
+            textStr += textOp
+            numRes += numOp
             # logger.info(textStr)
     
-    logger.info(textStr[3:])
+    logger.info(f"{textStr[3:]} > 1")
+    logger.info(f"{numOp} > 1")
+
 
 if __name__ == "__main__":
     main()
