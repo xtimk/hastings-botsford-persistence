@@ -153,11 +153,15 @@ def gen_diseq_items_of_matrix(matrix, actualCalc = False):
         textOpStringF = "\n" + textOpStringF
     return numOp, textOpStringF
 
-def main():
+def main(input_file):
     logger.info(f"Starting...")
 
     ## Read input matrix from text
-    initialMatrix = np.loadtxt("inputMatrix.txt", dtype=np.float64)
+    try:
+        initialMatrix = np.loadtxt(input_file, dtype=np.float64)
+    except:
+        logger.error(f"Error while reading input matrix. Check that file {input_file} exists, and that contains a valid matrix.")
+        exit(2)
     # initialMatrix = build_n_n_matrix(4)
     # initialMatrix = np.array([[1,2,1,0.5],
     #                  [0.3,0.6,0.8,1],
@@ -218,4 +222,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if(len(sys.argv) != 2):
+        logger.error("Error, invalid parameters")
+        logger.info("Example: .\python hb-persistence <file-containing-input-matrix>")
+        logger.info("Exiting.")
+        exit(1)
+    main(sys.argv[1])

@@ -34,9 +34,9 @@ pip install -r requirements.txt
 ```
 
 ## How to use it
-Put your input matrix into ```inputMatrix.txt```
+Put your input matrix into a txt file. 
 
-Example
+For example create ```inputMatrix.txt``` and put in the following matrix
 ```
 0    0.8  0.5  0.5
 0.3  0.6  0.8  1
@@ -44,13 +44,16 @@ Example
 0    0    0.7  0.1
 ```
 
-Then launch the program
+Then launch the program and specify the file containing the input matrix.
 ```bash
-python .\hb-persistence.py
+python .\hb-persistence.py inputMatrix.txt
 ```
 
-At the end 2 outputs will be showed
-The generic formula and the actual result
+The program will produce 3 outputs:
+
+ - The generic formula 
+ - A simplified formula, obtained by removing the zero elements from the generic formula
+ - The actual calculation.
 
 Output example
 ```bash
