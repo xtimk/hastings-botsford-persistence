@@ -1,6 +1,8 @@
 # hastings-botsford-persistence
 Python program to calculate Hastings Botsford Persistence from a generic NxN matrix
 
+See: https://www.pnas.org/doi/10.1073/pnas.0506651103
+
 ## Getting started
 Open a command prompt.
 Clone / Download this repository, and cd into it.
