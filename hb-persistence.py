@@ -208,9 +208,9 @@ def main():
 
     ## Log results
     print("\n---\n")
-    logger.info(f"Generic Full Disequation: {textStrFull[3:]} > 1")
+    logger.info(f"Generic Full Disequation: \n  {textStrFull[3:]} > 1")
     
-    logger.info(f"Generic Disequation also considering presence of zeros: {textStr[3:]} > 1")
+    logger.info(f"Generic Disequation also considering presence of zeros: \n  {textStr[3:]} > 1")
 
     ## and actual result
     logger.info(f"Actual Disequation: {numRes} > 1")
