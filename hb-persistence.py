@@ -154,6 +154,8 @@ def gen_diseq_items_of_matrix(matrix, actualCalc = False):
     return numOp, textOpStringF
 
 def main():
+    logger.info(f"Starting...")
+
     ## Read input matrix from text
     initialMatrix = np.loadtxt("inputMatrix.txt", dtype=np.float64)
     # initialMatrix = build_n_n_matrix(4)
@@ -166,6 +168,11 @@ def main():
     logger.info(f"Initial matrix\n{initialMatrix}")
     logger.info(f"Matrix shape: {initialMatrix.shape}")
     logger.info(f"Matrix size: {m}")
+    if(initialMatrix.shape[0] != initialMatrix.shape[1]):
+        logger.error("Error, input is not a square matrix. Exiting")
+        exit(1)
+    print("Review input matrix, and press ENTER to continue or CTRL+C to exit.")
+    input()
     initialMatrixSchema = build_n_n_matrix(m)
 
     textStrFull = ""
