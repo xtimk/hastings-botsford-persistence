@@ -19,6 +19,9 @@ formatter = logging.Formatter(loggingFormat)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+## Here set max decimals when performing all multiplications/divisions
+round_decimals = 8
+
 def getSquareSubmatrices(matrix, size):
     matrices = []
     matrixDim = matrix.shape[0]
@@ -73,7 +76,7 @@ def build_zero_matrix_schema(matrix: np.array):
 ## Returns a couple (num, text)
 ##  - num contains the actual calculation
 ##  - text contains the generic formula
-def gen_diseq_items_of_matrix(matrix, zeroMatrixSchema, actualCalc = False):
+def gen_diseq_items_of_matrix(matrix, actualCalc = False):
     logger.debug("Working on matrix")
     logger.debug(matrix)
     logger.debug("-------------\n")
@@ -98,32 +101,32 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrixSchema, actualCalc = False):
     numOp = 0
     for perm in perms_to_consider:
         skipElement = False
-        skipSinceDenominatorIsZero = False
         p = Permutation(perm)
         logger.debug(f"Considering permutation: {[el+1 for el in perm]}. Parity: {p.parity()}, Inversions: {p.inversions()}")
         textOpString = ""
         textOpString += " + ("
-        textOpString += f"({sgn_adapted(p)}) *"
+        if (sgn_adapted(p) == 1):
+            textOpString += f""
+        else:
+            textOpString += f"-"
 
         sgn_op = sgn_adapted(p)
 
         numerator_op = 1
         # generate numerator
         for k, l in zip(ks, perm):
-            if (zeroMatrixSchema[k][l] == 0):
+            if (matrix[k][l] == 0):
                 skipElement = True
             textOpString += f" Q_{k+1}{l+1}"
-            numerator_op *= matrix[k][l]
+            numerator_op = round(numerator_op * matrix[k][l], round_decimals)
         
         # generate denominator
         textOpString += "/"
 
         denominator_op = 1
         for k in ks:
-            if (k == 0):
-                skipSinceDenominatorIsZero = True
-            textOpString += f" Q_{k+1}{k+1}"
-            denominator_op *= (1 - matrix[k][k])
+            textOpString += f"(1 - Q_{k+1}{k+1})"
+            denominator_op = round(denominator_op * (1 - matrix[k][k]), round_decimals)
                 
         if (actualCalc):
             if(numerator_op != 0 and denominator_op != 0):
@@ -131,9 +134,9 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrixSchema, actualCalc = False):
                 logger.debug(numerator_op/denominator_op)
 
         textOpString += ")"
-        ## Denominator is 0 for Q_11. So in this case just skip it
+        ## Denominator can be 0 if at least one elem in diagonal is 0. Since this can happen, I need to handle this
         if (denominator_op != 0):
-            numOp += sgn_op * (numerator_op/denominator_op)
+            numOp += sgn_op * round(numerator_op/denominator_op, round_decimals)
         if (actualCalc):
             if(numerator_op != 0 and denominator_op != 0):
                 logger.debug(f"NumOp: {numOp}")
@@ -142,8 +145,12 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrixSchema, actualCalc = False):
 
         if (not skipElement):
             textOpStringF += textOpString
+        else:
+            logger.debug(f"Will skip {textOpString}")
         
     logger.debug(f"NumOp: {numOp}")
+    if(textOpStringF != ""):
+        textOpStringF = "\n" + textOpStringF
     return numOp, textOpStringF
 
 def main():
@@ -160,45 +167,40 @@ def main():
     logger.info(f"Matrix shape: {initialMatrix.shape}")
     logger.info(f"Matrix size: {m}")
     initialMatrixSchema = build_n_n_matrix(m)
-    zeroMatrixSchema = build_zero_matrix_schema(initialMatrix)
-    zeroMatrixSchemaFull = build_zero_matrix_schema(initialMatrixSchema)   
 
-    ## Generate text formula (just to see it).
-    ## Perform this on the matrixSchema (a matrix built with fake elements, named with indexes)
-    ## Example of matrixSchema
-    ## 11 12 13
-    ## 21 22 23
-    ## 31 32 33
-    textStr = ""
+    textStrFull = ""
     logger.info("Calculating disequations...")
+    
+    # Step 1: Get full text formula. To do this I use a fake NxN matrix populated with values different from 0
     logger.info("Calculating full text formula...")
     for i in range(2,m+1):
         matrices = getSquareSubmatrices(initialMatrixSchema, i)
         for matrix in matrices:
-            _, textOp = gen_diseq_items_of_matrix(matrix, zeroMatrixSchema)
-            textStr += textOp
-
-
-    logger.info("Calculating simplified text formula, considering presence of zeros in the input matrix...")
-    textStrFull = ""
-    for i in range(2,m+1):
-        matrices = getSquareSubmatrices(initialMatrixSchema, i)
-        for matrix in matrices:
-            _, textOp = gen_diseq_items_of_matrix(matrix, zeroMatrixSchemaFull)
+            _, textOp = gen_diseq_items_of_matrix(matrix)
             textStrFull += textOp
 
-    ## Perform actual calculation on the real matrix
+    # Step 2: Get simplified text formula. This formula is obtained by removing operands with zeros.
+    # So I launch this with the real matrix
+    logger.info("Calculating simplified text formula, considering presence of zeros in the input matrix...")
+    textStr = ""
+    for i in range(2,m+1):
+        matrices = getSquareSubmatrices(initialMatrix, i)
+        for matrix in matrices:
+            _, textOp = gen_diseq_items_of_matrix(matrix)
+            textStr += textOp
+
+    ## Step 3: Perform actual calculation on the real matrix
+    ## BTW this has been already calculated at step 1
     logger.info("Calculating actual result...")
     numRes = 0
     for i in range(2,m+1):
         matrices = getSquareSubmatrices(initialMatrix, i)
         for matrix in matrices:
-            numOp, _ = gen_diseq_items_of_matrix(matrix, zeroMatrixSchema, actualCalc=True)
+            numOp, _ = gen_diseq_items_of_matrix(matrix, actualCalc=True)
             numRes += numOp
-            # logger.info(f"HEREEE: {numOp}")
-            # logger.info(f"NUMRES: {numRes}")
 
-    ## Log text formula
+    ## Log results
+    print("\n---\n")
     logger.info(f"Generic Full Disequation: {textStrFull[3:]} > 1")
     
     logger.info(f"Generic Disequation also considering presence of zeros: {textStr[3:]} > 1")
