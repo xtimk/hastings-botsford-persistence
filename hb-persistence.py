@@ -56,10 +56,24 @@ def build_n_n_matrix(n):
     for x in range(0, nrows):
         for y in range(0, ncols):
             matrix[x][y] = f"{x+1}{y+1}"
-    return matrix
+    return np.array(matrix, dtype=np.float64)
+
+def build_zero_matrix_schema(matrix: np.array):
+    size = matrix.shape[0]
+    zero_matrix = np.full((size, size), 1, dtype=int)
+    for x in range(0, size):
+        for y in range(0, size):
+            if (matrix[x][y] == 0):
+                zero_matrix[x][y] = 0
+    
+    logger.debug(zero_matrix)
+    return zero_matrix
 
 
-def gen_diseq_items_of_matrix(matrix):
+## Returns a couple (num, text)
+##  - num contains the actual calculation
+##  - text contains the generic formula
+def gen_diseq_items_of_matrix(matrix, zeroMatrixSchema, actualCalc = False):
     logger.debug("Working on matrix")
     logger.debug(matrix)
     logger.debug("-------------\n")
@@ -80,11 +94,14 @@ def gen_diseq_items_of_matrix(matrix):
     for x in perms_to_consider:
         p = Permutation(x)
         logger.debug(f"{[el+1 for el in x]} - Parity: {p.parity()} | Inversions: {p.inversions()}")
-    textOpString = ""
+    textOpStringF = ""
     numOp = 0
     for perm in perms_to_consider:
+        skipElement = False
+        skipSinceDenominatorIsZero = False
         p = Permutation(perm)
         logger.debug(f"Considering permutation: {[el+1 for el in perm]}. Parity: {p.parity()}, Inversions: {p.inversions()}")
+        textOpString = ""
         textOpString += " + ("
         textOpString += f"({sgn_adapted(p)}) *"
 
@@ -93,26 +110,46 @@ def gen_diseq_items_of_matrix(matrix):
         numerator_op = 1
         # generate numerator
         for k, l in zip(ks, perm):
-            textOpString += f" Q_{matrix[k][l]}"
+            if (zeroMatrixSchema[k][l] == 0):
+                skipElement = True
+            textOpString += f" Q_{k+1}{l+1}"
             numerator_op *= matrix[k][l]
+        
         # generate denominator
         textOpString += "/"
 
         denominator_op = 1
         for k in ks:
-            textOpString += f" Q_{matrix[k][k]}"
-            denominator_op *= matrix[k][k]
-        
-        textOpString += ")"
+            if (k == 0):
+                skipSinceDenominatorIsZero = True
+            textOpString += f" Q_{k+1}{k+1}"
+            denominator_op *= (1 - matrix[k][k])
+                
+        if (actualCalc):
+            if(numerator_op != 0 and denominator_op != 0):
+                logger.debug(f"Numerator/Denominator: {numerator_op} / {denominator_op}")
+                logger.debug(numerator_op/denominator_op)
 
-        numOp += sgn_op * (numerator_op/denominator_op)
+        textOpString += ")"
+        ## Denominator is 0 for Q_11. So in this case just skip it
+        if (denominator_op != 0):
+            numOp += sgn_op * (numerator_op/denominator_op)
+        if (actualCalc):
+            if(numerator_op != 0 and denominator_op != 0):
+                logger.debug(f"NumOp: {numOp}")
+
         logger.debug(textOpString)
+
+        if (not skipElement):
+            textOpStringF += textOpString
+        
     logger.debug(f"NumOp: {numOp}")
-    return numOp, textOpString
+    return numOp, textOpStringF
 
 def main():
     ## Read input matrix from text
-    initialMatrix = np.loadtxt("inputMatrix.txt", dtype=float) 
+    initialMatrix = np.loadtxt("inputMatrix.txt", dtype=np.float64)
+    # initialMatrix = build_n_n_matrix(4)
     # initialMatrix = np.array([[1,2,1,0.5],
     #                  [0.3,0.6,0.8,1],
     #                  [2,3,1.4,0.8],
@@ -122,30 +159,54 @@ def main():
     logger.info(f"Initial matrix\n{initialMatrix}")
     logger.info(f"Matrix shape: {initialMatrix.shape}")
     logger.info(f"Matrix size: {m}")
-    logger.info("-------------")
-    logger.info("-------------")
     initialMatrixSchema = build_n_n_matrix(m)
+    zeroMatrixSchema = build_zero_matrix_schema(initialMatrix)
+    zeroMatrixSchemaFull = build_zero_matrix_schema(initialMatrixSchema)   
 
-    ## Generate text formula (just to see it)
+    ## Generate text formula (just to see it).
+    ## Perform this on the matrixSchema (a matrix built with fake elements, named with indexes)
+    ## Example of matrixSchema
+    ## 11 12 13
+    ## 21 22 23
+    ## 31 32 33
     textStr = ""
+    logger.info("Calculating disequations...")
+    logger.info("Calculating full text formula...")
     for i in range(2,m+1):
         matrices = getSquareSubmatrices(initialMatrixSchema, i)
         for matrix in matrices:
-            _, textOp = gen_diseq_items_of_matrix(matrix)
+            _, textOp = gen_diseq_items_of_matrix(matrix, zeroMatrixSchema)
             textStr += textOp
 
-    ## Perform actual calculation
+
+    logger.info("Calculating simplified text formula, considering presence of zeros in the input matrix...")
+    textStrFull = ""
+    for i in range(2,m+1):
+        matrices = getSquareSubmatrices(initialMatrixSchema, i)
+        for matrix in matrices:
+            _, textOp = gen_diseq_items_of_matrix(matrix, zeroMatrixSchemaFull)
+            textStrFull += textOp
+
+    ## Perform actual calculation on the real matrix
+    logger.info("Calculating actual result...")
     numRes = 0
     for i in range(2,m+1):
         matrices = getSquareSubmatrices(initialMatrix, i)
         for matrix in matrices:
-            numOp, _ = gen_diseq_items_of_matrix(matrix)
+            numOp, _ = gen_diseq_items_of_matrix(matrix, zeroMatrixSchema, actualCalc=True)
             numRes += numOp
+            # logger.info(f"HEREEE: {numOp}")
+            # logger.info(f"NUMRES: {numRes}")
 
-    ## Print text formula
-    logger.info(f"{textStr[3:]} > 1")
-    ## And actual result
-    logger.info(f"{numOp} > 1")
+    ## Log text formula
+    logger.info(f"Generic Full Disequation: {textStrFull[3:]} > 1")
+    
+    logger.info(f"Generic Disequation also considering presence of zeros: {textStr[3:]} > 1")
+
+    ## and actual result
+    logger.info(f"Actual Disequation: {numRes} > 1")
+    logger.info("All done")
+
 
 if __name__ == "__main__":
     main()
