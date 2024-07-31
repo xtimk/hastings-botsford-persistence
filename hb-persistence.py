@@ -93,14 +93,14 @@ def gen_diseq_items_of_matrix(matrix):
         numerator_op = 1
         # generate numerator
         for k, l in zip(ks, perm):
-            textOpString += f" {matrix[k][l]}"
+            textOpString += f" Q_{matrix[k][l]}"
             numerator_op *= matrix[k][l]
         # generate denominator
         textOpString += "/"
 
         denominator_op = 1
         for k in ks:
-            textOpString += f" {matrix[k][k]}"
+            textOpString += f" Q_{matrix[k][k]}"
             denominator_op *= matrix[k][k]
         
         textOpString += ")"
@@ -111,27 +111,41 @@ def gen_diseq_items_of_matrix(matrix):
     return numOp, textOpString
 
 def main():
-    initialMatrix = build_n_n_matrix(4)
+    ## Read input matrix from text
+    initialMatrix = np.loadtxt("inputMatrix.txt", dtype=float) 
+    # initialMatrix = np.array([[1,2,1,0.5],
+    #                  [0.3,0.6,0.8,1],
+    #                  [2,3,1.4,0.8],
+    #                  [0,0,1,3]])
+    
+    m = initialMatrix.shape[0]
     logger.info(f"Initial matrix\n{initialMatrix}")
     logger.info(f"Matrix shape: {initialMatrix.shape}")
-    m = initialMatrix.shape[0]
     logger.info(f"Matrix size: {m}")
     logger.info("-------------")
     logger.info("-------------")
+    initialMatrixSchema = build_n_n_matrix(m)
 
+    ## Generate text formula (just to see it)
     textStr = ""
+    for i in range(2,m+1):
+        matrices = getSquareSubmatrices(initialMatrixSchema, i)
+        for matrix in matrices:
+            _, textOp = gen_diseq_items_of_matrix(matrix)
+            textStr += textOp
+
+    ## Perform actual calculation
     numRes = 0
     for i in range(2,m+1):
         matrices = getSquareSubmatrices(initialMatrix, i)
         for matrix in matrices:
-            numOp, textOp = gen_diseq_items_of_matrix(matrix)
-            textStr += textOp
+            numOp, _ = gen_diseq_items_of_matrix(matrix)
             numRes += numOp
-            # logger.info(textStr)
-    
-    logger.info(f"{textStr[3:]} > 1")
-    logger.info(f"{numOp} > 1")
 
+    ## Print text formula
+    logger.info(f"{textStr[3:]} > 1")
+    ## And actual result
+    logger.info(f"{numOp} > 1")
 
 if __name__ == "__main__":
     main()
