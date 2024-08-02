@@ -76,7 +76,7 @@ def build_zero_matrix_schema(matrix: np.array):
 ## Returns a couple (num, text)
 ##  - num contains the actual calculation
 ##  - text contains the generic formula
-def gen_diseq_items_of_matrix(matrix, actualCalc = False):
+def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
     logger.debug("Working on matrix")
     logger.debug(matrix)
     logger.debug("-------------\n")
@@ -115,9 +115,12 @@ def gen_diseq_items_of_matrix(matrix, actualCalc = False):
         numerator_op = 1
         # generate numerator
         for k, l in zip(ks, perm):
-            if (matrix[k][l] == 0):
+            if (zeroMatrix[k][l] == 0):
                 skipElement = True
-            textOpString += f" Q_{k+1}{l+1}"
+            if(actualCalc):
+                textOpString += f" {matrix[k][l]}"
+            else:
+                textOpString += f" Q_{matrix[k][l]}"
             numerator_op = round(numerator_op * matrix[k][l], round_decimals)
         
         # generate denominator
@@ -125,7 +128,10 @@ def gen_diseq_items_of_matrix(matrix, actualCalc = False):
 
         denominator_op = 1
         for k in ks:
-            textOpString += f"(1 - Q_{k+1}{k+1})"
+            if(actualCalc):
+                textOpString += f"(1 - {matrix[k][k]})"
+            else:
+                textOpString += f"(1 - Q_{matrix[k][k]})"
             denominator_op = round(denominator_op * (1 - matrix[k][k]), round_decimals)
                 
         if (actualCalc):
@@ -135,7 +141,7 @@ def gen_diseq_items_of_matrix(matrix, actualCalc = False):
 
         textOpString += ")"
         ## Denominator can be 0 if at least one elem in diagonal is 0. Since this can happen, I need to handle this
-        if (denominator_op != 0):
+        if (denominator_op != 0 and numerator_op != 0):
             numOp += sgn_op * round(numerator_op/denominator_op, round_decimals)
         if (actualCalc):
             if(numerator_op != 0 and denominator_op != 0):
@@ -153,78 +159,94 @@ def gen_diseq_items_of_matrix(matrix, actualCalc = False):
         textOpStringF = "\n" + textOpStringF
     return numOp, textOpStringF
 
-def main(input_file):
-    logger.info(f"Starting...")
 
-    ## Read input matrix from text
+def gen_hastings_botsford_diseq(matrix: np.ndarray, zeroMatrix: np.ndarray, actualCalc = False):
+    textStrFull = ""
+    numRes = 0
+    m = matrix.shape[0]
+    for i in range(2,m+1):
+        matrices = getSquareSubmatrices(matrix, i)
+        zeroMatrices = getSquareSubmatrices(zeroMatrix, i)
+        for (m, z) in zip(matrices, zeroMatrices):
+            numOp, textOp = gen_diseq_items_of_matrix(m, z, actualCalc)
+            # logger.info(textOp)
+            textStrFull += textOp
+            numRes += numOp
+    return numRes, textStrFull
+
+def read_input_matrix(filepath: str):
+    logger.info(f"Reading matrix from file {filepath}.")
     try:
-        initialMatrix = np.loadtxt(input_file, dtype=np.float64)
+        initialMatrix = np.loadtxt(filepath, dtype=np.float64)
     except:
         logger.error(f"Error while reading input matrix. Check that file {input_file} exists, and that contains a valid matrix.")
         exit(2)
-    # initialMatrix = build_n_n_matrix(4)
-    # initialMatrix = np.array([[1,2,1,0.5],
-    #                  [0.3,0.6,0.8,1],
-    #                  [2,3,1.4,0.8],
-    #                  [0,0,1,3]])
-    
-    m = initialMatrix.shape[0]
-    logger.info(f"Initial matrix\n{initialMatrix}")
-    logger.info(f"Matrix shape: {initialMatrix.shape}")
-    logger.info(f"Matrix size: {m}")
-    if(initialMatrix.shape[0] != initialMatrix.shape[1]):
+    return initialMatrix
+
+def log_base_matrix_infos(matrix: np.ndarray):
+    logger.info(f"Initial matrix\n{matrix}")
+    logger.info(f"Matrix shape: {matrix.shape}")
+
+def sanity_check_matrix(matrix: np.ndarray):
+    if(len(matrix.shape) != 2):
+        logger.error("Error, this is not a bidimensinal matrix.")
+        exit(1)
+    if(matrix.shape[0] != matrix.shape[1]):
         logger.error("Error, input is not a square matrix. Exiting")
         exit(1)
+
+def get_size_of_square_matrix(matrix: np.ndarray):
+    return matrix.shape[0]
+
+def main(input_file):
+    logger.info(f"Starting program.")
+
+    initialMatrix = read_input_matrix(input_file)
+    
+    log_base_matrix_infos(initialMatrix)
+
+    sanity_check_matrix(matrix=initialMatrix)
+
+    m = get_size_of_square_matrix(initialMatrix)
+
     print("Review input matrix, and press ENTER to continue or CTRL+C to exit.")
     input()
-    initialMatrixSchema = build_n_n_matrix(m)
 
-    textStrFull = ""
+    logger.info("Initializing matrix schemas and zero-matrix")
+    initialMatrixSchema = build_n_n_matrix(m)
+    initialZeroMatrixSchema = build_zero_matrix_schema(initialMatrixSchema)
+    initialZeroMatrix = build_zero_matrix_schema(initialMatrix)
+
     logger.info("Calculating disequations...")
-    
     # Step 1: Get full text formula. To do this I use a fake NxN matrix populated with values different from 0
     logger.info("Calculating full text formula...")
-    for i in range(2,m+1):
-        matrices = getSquareSubmatrices(initialMatrixSchema, i)
-        for matrix in matrices:
-            _, textOp = gen_diseq_items_of_matrix(matrix)
-            textStrFull += textOp
+    _, textStrFull = gen_hastings_botsford_diseq(initialMatrixSchema, initialZeroMatrixSchema)    
 
     # Step 2: Get simplified text formula. This formula is obtained by removing operands with zeros.
     # So I launch this with the real matrix
     logger.info("Calculating simplified text formula, considering presence of zeros in the input matrix...")
-    textStr = ""
-    for i in range(2,m+1):
-        matrices = getSquareSubmatrices(initialMatrix, i)
-        for matrix in matrices:
-            _, textOp = gen_diseq_items_of_matrix(matrix)
-            textStr += textOp
+    _, textStr = gen_hastings_botsford_diseq(initialMatrixSchema, initialZeroMatrix)
 
     ## Step 3: Perform actual calculation on the real matrix
-    ## BTW this has been already calculated at step 1
     logger.info("Calculating actual result...")
-    numRes = 0
-    for i in range(2,m+1):
-        matrices = getSquareSubmatrices(initialMatrix, i)
-        for matrix in matrices:
-            numOp, _ = gen_diseq_items_of_matrix(matrix, actualCalc=True)
-            numRes += numOp
+    numRes, textRealOps = gen_hastings_botsford_diseq(initialMatrix, initialZeroMatrix, actualCalc=True)
 
     ## Log results
     print("\n---\n")
-    logger.info(f"Generic Full Disequation: \n  {textStrFull[3:]} > 1")
+    # logger.info(f"Generic Full Disequation: \n  {textStrFull[3:]} > 1")
     
     logger.info(f"Generic Disequation also considering presence of zeros: \n  {textStr[3:]} > 1")
 
     ## and actual result
     logger.info(f"Actual Disequation: {numRes} > 1")
+    logger.info(f"Actual Disequation calcs: {textRealOps} > 1")
     logger.info("All done")
 
 
 if __name__ == "__main__":
     if(len(sys.argv) != 2):
         logger.error("Error, invalid parameters")
-        logger.info("Example: .\python hb-persistence <file-containing-input-matrix>")
+        logger.info("Example: .\\python hb-persistence.py <file-containing-input-matrix>")
         logger.info("Exiting.")
         exit(1)
     main(sys.argv[1])
