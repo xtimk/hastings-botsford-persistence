@@ -19,9 +19,6 @@ formatter = logging.Formatter(loggingFormat)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-## Here set max decimals when performing all multiplications/divisions
-round_decimals = 8
-
 def getSquareSubmatrices(matrix, size):
     matrices = []
     matrixDim = matrix.shape[0]
@@ -121,7 +118,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
                 textOpString += f" {matrix[k][l]}"
             else:
                 textOpString += f" Q_{matrix[k][l]}"
-            numerator_op = round(numerator_op * matrix[k][l], round_decimals)
+            numerator_op = numerator_op * matrix[k][l]
         
         # generate denominator
         textOpString += "/"
@@ -132,7 +129,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
                 textOpString += f"(1 - {matrix[k][k]})"
             else:
                 textOpString += f"(1 - Q_{matrix[k][k]})"
-            denominator_op = round(denominator_op * (1 - matrix[k][k]), round_decimals)
+            denominator_op = denominator_op * (1 - matrix[k][k])
                 
         if (actualCalc):
             if(numerator_op != 0 and denominator_op != 0):
@@ -142,7 +139,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
         textOpString += ")"
         ## Denominator can be 0 if at least one elem in diagonal is 0. Since this can happen, I need to handle this
         # if (denominator_op != 0 and numerator_op != 0):
-        numOp += sgn_op * round(numerator_op/denominator_op, round_decimals)
+        numOp += sgn_op * numerator_op/denominator_op
         if (actualCalc):
             if(numerator_op != 0 and denominator_op != 0):
                 logger.debug(f"NumOp: {numOp}")
@@ -150,7 +147,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
         logger.debug(textOpString)
 
         if (not skipElement):
-            logger.info(f"{textOpString} = {sgn_op * round(numerator_op/denominator_op, round_decimals)}")
+            logger.debug(f"{textOpString} = {sgn_op * numerator_op/denominator_op}")
             textOpStringF += textOpString
         else:
             logger.debug(f"Will skip {textOpString}")
@@ -180,7 +177,7 @@ def read_input_matrix(filepath: str):
     try:
         initialMatrix = np.loadtxt(filepath, dtype=np.float64)
     except:
-        logger.error(f"Error while reading input matrix. Check that file {input_file} exists, and that contains a valid matrix.")
+        logger.error(f"Error while reading input matrix. Check that file {filepath} exists, and that contains a valid matrix.")
         exit(2)
     return initialMatrix
 
@@ -234,7 +231,7 @@ def main(input_file):
 
     ## Log results
     print("\n---\n")
-    # logger.info(f"Generic Full Disequation: \n  {textStrFull[3:]} > 1")
+    logger.info(f"Generic Full Disequation: \n  {textStrFull[3:]} > 1")
     
     logger.info(f"Generic Disequation also considering presence of zeros: \n  {textStr[3:]} > 1")
 
