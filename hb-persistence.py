@@ -141,8 +141,8 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
 
         textOpString += ")"
         ## Denominator can be 0 if at least one elem in diagonal is 0. Since this can happen, I need to handle this
-        if (denominator_op != 0 and numerator_op != 0):
-            numOp += sgn_op * round(numerator_op/denominator_op, round_decimals)
+        # if (denominator_op != 0 and numerator_op != 0):
+        numOp += sgn_op * round(numerator_op/denominator_op, round_decimals)
         if (actualCalc):
             if(numerator_op != 0 and denominator_op != 0):
                 logger.debug(f"NumOp: {numOp}")
@@ -150,6 +150,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
         logger.debug(textOpString)
 
         if (not skipElement):
+            logger.info(f"{textOpString} = {sgn_op * round(numerator_op/denominator_op, round_decimals)}")
             textOpStringF += textOpString
         else:
             logger.debug(f"Will skip {textOpString}")
