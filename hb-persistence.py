@@ -101,7 +101,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
         p = Permutation(perm)
         logger.debug(f"Considering permutation: {[el+1 for el in perm]}. Parity: {p.parity()}, Inversions: {p.inversions()}")
         textOpString = ""
-        textOpString += " + ("
+        textOpString += " + (("
         if (sgn_adapted(p) == 1):
             textOpString += f""
         else:
@@ -121,7 +121,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
             numerator_op = numerator_op * matrix[k][l]
         
         # generate denominator
-        textOpString += "/"
+        textOpString += ")/("
 
         denominator_op = 1
         for k in ks:
@@ -136,7 +136,7 @@ def gen_diseq_items_of_matrix(matrix, zeroMatrix, actualCalc = False):
                 logger.debug(f"Numerator/Denominator: {numerator_op} / {denominator_op}")
                 logger.debug(numerator_op/denominator_op)
 
-        textOpString += ")"
+        textOpString += "))"
         ## Denominator can be 0 if at least one elem in diagonal is 0. Since this can happen, I need to handle this
         # if (denominator_op != 0 and numerator_op != 0):
         numOp += sgn_op * numerator_op/denominator_op
@@ -170,7 +170,7 @@ def gen_hastings_botsford_diseq(matrix: np.ndarray, zeroMatrix: np.ndarray, actu
             # logger.info(textOp)
             textStrFull += textOp
             numRes += numOp
-    return numRes, textStrFull
+    return numRes, textStrFull[3:]
 
 def read_input_matrix(filepath: str):
     logger.info(f"Reading matrix from file {filepath}.")
@@ -231,9 +231,9 @@ def main(input_file):
 
     ## Log results
     print("\n---\n")
-    logger.info(f"Generic Full Disequation: \n  {textStrFull[3:]} > 1")
+    logger.info(f"Generic Full Disequation: \n  {textStrFull} > 1")
     
-    logger.info(f"Generic Disequation also considering presence of zeros: \n  {textStr[3:]} > 1")
+    logger.info(f"Generic Disequation also considering presence of zeros: \n  {textStr} > 1")
 
     ## and actual result
     logger.info(f"Actual Disequation: {numRes} > 1")
