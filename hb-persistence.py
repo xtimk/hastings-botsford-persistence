@@ -237,7 +237,7 @@ def main(input_file):
 
     ## and actual result
     logger.info(f"Actual Disequation: {numRes} > 1")
-    logger.info(f"Actual Disequation calcs: {textRealOps} > 1")
+    logger.info(f"Actual Disequation calcs: \n  {textRealOps} > 1")
     logger.info("All done")
 
 
